@@ -1,0 +1,10 @@
+numpy<2.0.0
+pandas
+matplotlib
+yfinance
+scikit-learn
+streamlit
+plotly
+protobuf
+typing-extensions
+google-genai
