@@ -17,6 +17,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras import regularizers
 
 # Big ticker list
 ALL_TICKERS = [
@@ -62,7 +63,7 @@ class StockPricePredictor:
         self.logp = None
         self.val_bias = None
 
-    def fetch_data(self, period='2y', interval='1d'):
+    def fetch_data(self, period='3y', interval='1d'):
         """Fetch stock data from Yahoo Finance"""
         df = yf.Ticker(self.symbol).history(period=period, interval=interval)
         if df.empty:
@@ -109,21 +110,22 @@ class StockPricePredictor:
         """Build LSTM model architecture"""
         Hlen = len(self.horizons)
         model = Sequential([
-            LSTM(units, return_sequences=True, input_shape=(self.lookback,1)),
+            LSTM(units, return_sequences=True, input_shape=(self.lookback,1),
+                 kernel_regularizer=regularizers.l2(0.01)),
             Dropout(dropout),
-             LSTM(units),
+             LSTM(units, kernel_regularizer=regularizers.l2(0.01)),
             Dropout(dropout),
-            Dense(64, activation='linear'),
-            Dense(Hlen, activation='linear')
+            Dense(64, activation='sigmoid', kernel_regularizer=regularizers.l2(0.01)),
+            Dense(Hlen, activation='sigmoid')
         ])
         model.compile(optimizer=Adam(learning_rate=lr), loss=pinball_loss(tau), metrics=['mae'])
         self.model = model
         return model
 
-    def train(self, X_train, Y_train, epochs=80, batch_size=32, val_split=0.1, verbose=1):
+    def train(self, X_train, Y_train, epochs=30, batch_size=32, val_split=0.1, verbose=1):
         """Train the LSTM model"""
         cbs = [
-            EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True),
+            EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
             ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=0),
         ]
         hist = self.model.fit(
@@ -131,7 +133,7 @@ class StockPricePredictor:
             validation_split=val_split,
             epochs=epochs,
             batch_size=batch_size,
-            shuffle=False,
+            shuffle=True,
             verbose=verbose,
             callbacks=cbs
         )
