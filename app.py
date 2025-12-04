@@ -70,13 +70,13 @@ with st.sidebar:
     )
     
     # Hardcoded parameters (hidden from UI)
-    period = '2y'
+    period = '3y'
     interval = '1d'
     lookback = 60
     horizons = (1, 30, 90, 180)
     units = 64
     dropout = 0.2
-    epochs = 80
+    epochs = 30
     batch_size = 32
     learning_rate = 1e-3
     gemini_api_key = "AIzaSyAPwT7N716JovCHACF8D-mhemIZU_odxxU"
